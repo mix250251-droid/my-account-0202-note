@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>보험금 청구 판단기</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f6f7f9;--card:#fff;--text:#1d2330;--sub:#667085;--line:#e3e6ec;--ok:#1a7f4b;--okbg:#e6f5ec;--no:#c2410c;--nobg:#fdeee3;--new:#1d4ed8;--newbg:#e5edff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#14171d;--card:#1e222b;--text:#eceff4;--sub:#9aa3b2;--line:#323846;--ok:#5ad08f;--okbg:#17301f;--no:#fb9a5c;--nobg:#3a2515;--new:#8fb0ff;--newbg:#1c2a4d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14171d;--card:#1e222b;--text:#eceff4;--sub:#9aa3b2;--line:#323846;--ok:#5ad08f;--okbg:#17301f;--no:#fb9a5c;--nobg:#3a2515;--new:#8fb0ff;--newbg:#1c2a4d;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;line-height:1.5}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:22px;margin:0 0 4px}
+.sub{color:var(--sub);font-size:14px;margin:0 0 16px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:0 18px;align-items:start}
+@media (min-width:820px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+label{font-weight:600;font-size:14px;display:block;margin-bottom:6px}
+input[type=date],input[type=text]{width:100%;font-size:18px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+.row{display:flex;gap:8px}
+button{font-size:15px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;white-space:nowrap}
+button.p{background:var(--new);color:#fff;border-color:var(--new)}
+.chips{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+#chips{max-height:240px;overflow-y:auto}
+#list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.nmrow input{flex:0 1 19em;width:auto;min-width:0;font-size:16px}
+.vrow{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-weight:600;font-size:15px}
+.vrow b{cursor:pointer;color:var(--sub);padding:0 4px}
+.irow{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:var(--bg)}
+.irow.sel{border-color:var(--new);box-shadow:0 0 0 2px var(--newbg)}
+.irow .nm{font-weight:700}.irow .sb{font-size:12.5px;color:var(--sub)}
+.irow .ih{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.irow .il{display:grid;grid-template-columns:8.6em 1fr;gap:6px;font-size:13px;padding-top:6px;border-top:1px solid var(--line)}
+.irow .il.gr{color:var(--sub);opacity:.65}
+.irow .id{font-variant-numeric:tabular-nums;font-weight:600}
+.irow .ik.rn{font-weight:700;color:var(--new)}
+.irow .dn{color:var(--sub);font-weight:400}
+.irow .bd{font-size:12.5px;font-weight:700;border-radius:999px;padding:2px 10px;white-space:nowrap}
+.q{border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.q .l{font-size:13px;font-weight:700;opacity:.85}
+.q .a{font-size:22px;font-weight:800;margin:2px 0}
+.q .d{font-size:14px}
+.ok{background:var(--okbg);color:var(--ok)}.no{background:var(--nobg);color:var(--no)}.nw{background:var(--newbg);color:var(--new)}
+.tip{background:var(--card);border:1px dashed var(--new);border-radius:12px;padding:12px 14px;font-size:15px;margin-bottom:10px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.kv:last-child{border:0}.kv span:first-child{color:var(--sub)}.kv b{text-align:right}
+.note{font-size:12.5px;color:var(--sub)}
+.hide{display:none}
+details summary{cursor:pointer;font-weight:600;font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>보험금 청구 판단기</h1>
+<p class="sub">진료과별로 방문 기록을 남기고 보장 여부를 확인해요.</p>
+
+<div class="card">
+  <label>진료과 목록</label>
+  <div class="chips" id="list"></div>
+  <div class="row nmrow" style="margin-top:10px"><input type="text" id="newname" maxlength="20" placeholder="진료과 이름 (예: 내분비내과)"><button id="addItem" class="p">+ 추가</button></div>
+</div>
+<p id="empty" class="note hide">위에서 진료과를 추가해 주세요.</p>
+
+<div class="grid" id="detail">
+  <div>
+    <div class="card">
+      <label>진료과</label>
+      <div id="nameView" class="row" style="align-items:center"><div id="nameText" style="font-size:20px;font-weight:800;flex:1;min-width:0;overflow-wrap:anywhere"></div><button id="editName">수정</button><button id="del">삭제</button></div>
+      <div id="nameEdit" class="row nmrow hide"><input type="text" id="name" maxlength="20"><button id="saveName" class="p">저장</button><button id="cancelName">취소</button></div>
+      <div style="margin-top:14px">
+        <label for="first">① 병원 최초 방문일</label>
+        <input type="date" id="first">
+      </div>
+      <div style="margin-top:14px">
+        <label for="next">② 다음 병원 방문일</label>
+        <div class="row"><input type="date" id="next"><button id="add" class="p">추가</button></div>
+      </div>
+      <div style="margin-top:14px">
+        <label>방문 기록</label>
+        <div class="chips" id="chips"></div>
+      </div>
+      <p class="note" id="saved" style="margin:12px 0 0">변경하면 자동 저장돼요</p>
+    </div>
+  </div>
+  <div>
+    <div id="verdict"></div>
+    <div id="out" class="hide">
+      <div class="card"><details open><summary>기준 날짜</summary><div id="kv" style="margin-top:8px"></div></details></div>
+      <p class="note">※ 보장 365일 → 면책 6개월(보장 종료일 + 6개월, 재개는 그 다음날) / 마지막 방문일 + 6개월 + 1일부터 신규 인식. 면책 기간에 들어 있는 방문일은 청구가 안 된 것으로 보고 마지막 방문일 계산에서 제외해요. 실제 적용은 약관을 꼭 확인하세요.</p>
+    </div>
+  </div>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const W=['일','월','화','수','목','금','토'];
+const INC=365;
+const pd=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+function addM(dt,n){const t=new Date(dt.getFullYear(),dt.getMonth()+n,1);const l=new Date(t.getFullYear(),t.getMonth()+1,0).getDate();return new Date(t.getFullYear(),t.getMonth(),Math.min(dt.getDate(),l))}
+const addD=(dt,n)=>new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()+n);
+const day0=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate());
+const dd=(a,b)=>Math.round((b-a)/864e5);
+const f=dt=>dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate()+'('+W[dt.getDay()]+')';
+const q=(c,l,a,d)=>'<div class="q '+c+'"><div class="l">'+l+'</div><div class="a">'+a+'</div><div class="d">'+d+'</div></div>';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let items=[],active=null,touched=false,delArm=false;
+const cur=()=>items.find(i=>i.id===active);
+
+function cyc(first,arr){
+  let S=first,L=first,ig=[];
+  for(const s of arr){const d=pd(s);if(d<=first)continue;
+    if(d>=addD(addM(L,6),1)){S=d;L=d}
+    else if(d<=addD(S,INC)){L=d}
+    else ig.push(d)}
+  const E=addD(S,INC);
+  return{S,L,ig,E,R:addD(addM(E,6),1),NF:addD(addM(L,6),1)};
+}
+function cycList(first,arr){
+  let L=first,S=first;const cs=[{S:first}];
+  for(const s of arr){const d=pd(s);if(d<=first)continue;
+    if(d>=addD(addM(L,6),1)){cs.push({S:d});S=d;L=d}
+    else if(d<=addD(S,INC)){L=d}}
+  cs.forEach(c=>c.E=addD(c.S,INC));
+  return cs;
+}
+function status(it){
+  if(!it.first)return{c:'nw',b:'기록 없음',rows:'<div class="il"><span class="ik">최초 방문일을 입력하세요</span></div>'};
+  const first=pd(it.first),T=day0(new Date()),c=cyc(first,(it.visits||[]).filter(s=>pd(s)<=T));
+  const cs=cycList(first,it.visits||[]),m=cs.length;let noted=false,rows='';
+  cs.forEach((x,i)=>{
+    if(i<m-2)return;
+    const last=i===m-1,end=last?x.E:cs[i+1].S,past=end<T;
+    const label=last?(m===1?'종료':'신규갱신'+(x.S>T?'(예정)':'')):(i+1)+'차 종료';
+    let note='';if(!past&&!noted){noted=true;const n=dd(T,end);note=' · '+(n===0?'오늘':n+'일 남음')}
+    rows+='<div class="il'+(past?' gr':'')+'"><span class="id">'+f(end)+'</span><span class="ik'+(last&&m>1?' rn':'')+'">'+label+'<span class="dn">'+note+'</span></span></div>';
+  });
+  let st;
+  if(T>=c.NF)st={c:'nw',b:'신규 가능'};
+  else if(T<=c.E)st={c:'ok',b:'보장 중'};
+  else{st={c:'no',b:'면책 중'};rows+='<div class="il"><span class="id">'+f(c.NF)+'</span><span class="ik">신규 가능<span class="dn"> · '+dd(T,c.NF)+'일 뒤</span></span></div>'}
+  st.rows=rows;return st;
+}
+function judge(first,N,c){
+  const {L,E,R,NF}=c;
+  if(N<first)return q('no','안내','최초 방문일 이전이에요','날짜를 확인해 주세요.');
+  if(N>=NF)return q('nw','① 보장 기간 여부','기존 주기 아님 → 신규','마지막 방문일('+f(L)+')로부터 6개월이 지나 신규로 인식돼요.')
+    +q('ok','② 신규 적용','가능 ✅ 면책기간 고려 안 해도 돼요','이 날부터 새로 365일 보장: '+f(N)+' ~ '+f(addD(N,INC))+'.');
+  if(N<=E)return q('ok','① 보장 기간 여부','보장 기간 안이에요 ✅','보장 종료일 '+f(E)+'까지 '+dd(N,E)+'일 남았어요.')
+    +q('no','② 신규 적용','아직 신규 아님','신규가 되려면 '+f(NF)+' 이후여야 해요 ('+dd(N,NF)+'일 뒤).')
+    +'<div class="tip">💡 보장 중이라 그대로 가도 청구돼요. 다만 '+f(NF)+' 이후로 미루면 신규로 새 365일 보장이 시작돼요.</div>';
+  return q('no','① 보장 기간 여부','보장 기간 밖 / 면책 기간 ⛔','보장은 '+f(E)+'에 끝났고, 면책은 '+f(R)+' 전까지예요.')
+    +q('no','② 신규 적용','아직 신규 아님','마지막 방문일 '+f(L)+' 기준으로 '+f(NF)+'부터 신규예요.')
+    +'<div class="tip">💡 날짜를 조정한다면 <b>'+f(NF)+'</b> 이후로 잡으면 면책기간 없이 신규 청구돼요 (지금 날짜에서 <b>'+dd(N,NF)+'일</b> 뒤).</div>';
+}
+
+function renderList(){
+  $('list').innerHTML=items.map(it=>{const s=status(it);
+    return '<div class="irow'+(it.id===active?' sel':'')+'" data-id="'+it.id+'"><div class="ih"><span class="nm">'+esc(it.name||'(이름 없음)')+'</span><span class="bd '+s.c+'">'+s.b+'</span></div>'+s.rows+'</div>'}).join('');
+}
+function renderDetail(){
+  const it=cur();
+  $('detail').classList.toggle('hide',!it);
+  $('empty').classList.toggle('hide',!!it);
+  if(!it)return;
+  it.visits=(it.visits||[]).filter(s=>!it.first||s>it.first).sort();
+  const last=it.visits.length?it.visits[it.visits.length-1]:it.first;
+  $('next').min=last||'';
+  if($('next').value&&$('next').value<last)$('next').value='';
+  const nv=$('next').value,first=it.first?pd(it.first):null;
+  $('chips').innerHTML=(first?['<div class="vrow"><span>1차: '+f(first)+'</span></div>']:[]).concat(it.visits.map((s,i)=>'<div class="vrow"><span>'+(i+2)+'차: '+f(pd(s))+'</span><b data-i="'+i+'">✕</b></div>')).join('');
+  if(!first){$('out').classList.add('hide');$('verdict').innerHTML='';return}
+  const full=cyc(first,it.visits);
+  let N=nv?pd(nv):null,base=full,pre='';
+  if(!N&&it.visits.length){N=pd(it.visits[it.visits.length-1]);base=cyc(first,it.visits.slice(0,-1));
+    pre='<div class="note" style="margin:0 0 8px;font-weight:600">'+(it.visits.length+1)+'차 방문일('+f(N)+') 판정</div>'}
+  $('verdict').innerHTML=N?pre+judge(first,N,base):'<div class="tip">② 다음 병원 방문일을 넣으면 보장 여부와 신규 적용 여부를 바로 알려드려요. "추가"를 누르면 방문 기록에 등록돼요.</div>';
+  $('kv').innerHTML=
+    '<div class="kv"><span>보장 기간 (최초 방문일 ~ 종료일)</span><b>'+f(full.S)+' ~ '+f(full.E)+'</b></div>'
+   +'<div class="kv"><span>마지막 방문일</span><b>'+f(full.L)+'</b></div>'
+   +'<div class="kv"><span>보장 종료일</span><b>'+f(full.E)+'</b></div>'
+   +'<div class="kv"><span>면책 후 보장 재개일</span><b>'+f(full.R)+'</b></div>'
+   +'<div class="kv"><span>신규 인식 시작일(마지막 방문일 기준)</span><b>'+f(full.NF)+'</b></div>'
+   +(full.ig.length?'<div class="kv"><span>면책 중이라 제외한 방문일</span><b>'+full.ig.map(f).join(', ')+'</b></div>':'');
+  $('out').classList.remove('hide');
+}
+function renderAll(){renderList();renderDetail()}
+function select(id){
+  active=id;delArm=false;$('del').textContent='삭제';
+  const it=cur();
+  $('name').value=it?it.name:'';setEdit(false);$('first').value=it?it.first||'':'';$('next').value='';
+  renderAll();
+}
+let saveT=null;
+function persist(){
+  $('saved').textContent='저장 중…';
+  clearTimeout(saveT);
+  saveT=setTimeout(()=>{
+    google.script.run
+      .withSuccessHandler(()=>{$('saved').textContent='저장됨 ✓'})
+      .withFailureHandler(()=>{$('saved').textContent='저장 실패 — 다시 시도해 주세요'})
+      .saveData(JSON.stringify({v:2,items,active}));
+  },400);
+}
+function applyData(d){
+  if(!d)return;
+  if(Array.isArray(d.items)){items=d.items;active=d.active}
+  else if(d.first!==undefined){items=[{id:'a',name:'기본',first:d.first||'',visits:(d.extras||[]).slice().sort()}];active='a'}
+  else return;
+  if(!cur())active=items.length?items[0].id:null;
+  select(active);
+}
+
+$('addItem').addEventListener('click',()=>{
+  const nm=$('newname').value.trim()||('진료과 '+(items.length+1));
+  const it={id:Date.now().toString(36),name:nm,first:'',visits:[]};
+  items.push(it);$('newname').value='';touched=true;select(it.id);persist();
+});
+$('newname').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing)$('addItem').click()});
+$('list').addEventListener('click',e=>{const r=e.target.closest('.irow');if(r){touched=true;select(r.dataset.id);persist()}});
+function setEdit(on){const it=cur();$('nameEdit').classList.toggle('hide',!on);$('nameView').classList.toggle('hide',on);$('nameText').textContent=it?it.name:'';if(on){$('name').value=it?it.name:'';$('name').focus()}}
+$('editName').addEventListener('click',()=>setEdit(true));
+$('cancelName').addEventListener('click',()=>setEdit(false));
+function saveName(){const it=cur();if(!it)return;const v=$('name').value.trim();if(v){it.name=v;touched=true;persist()}setEdit(false);renderList()}
+$('saveName').addEventListener('click',saveName);
+$('name').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing)saveName();if(e.key==='Escape')setEdit(false)});
+$('first').addEventListener('input',()=>{const it=cur();if(it){it.first=$('first').value;touched=true;renderAll();persist()}});
+$('next').addEventListener('input',renderDetail);
+$('add').addEventListener('click',()=>{
+  const it=cur(),v=$('next').value;if(!it||!it.first||!v)return;
+  const last=it.visits.length?it.visits[it.visits.length-1]:it.first;
+  if(v>it.first&&v>=last&&!it.visits.includes(v)){it.visits.push(v);it.visits.sort();$('next').value='';touched=true;renderAll();$('chips').scrollTop=$('chips').scrollHeight;persist()}
+});
+$('chips').addEventListener('click',e=>{const i=e.target.dataset.i,it=cur();if(it&&i!==undefined){it.visits.splice(+i,1);touched=true;renderAll();persist()}});
+$('del').addEventListener('click',()=>{
+  if(!delArm){delArm=true;$('del').textContent='정말 삭제?';setTimeout(()=>{delArm=false;$('del').textContent='삭제'},3000);return}
+  items=items.filter(i=>i.id!==active);touched=true;select(items.length?items[0].id:null);persist();
+});
+
+(function(){
+  select(null);
+  google.script.run
+    .withSuccessHandler(str=>{
+      if(str&&!touched){try{applyData(JSON.parse(str));$('saved').textContent='저장된 내용을 불러왔어요 ✓'}catch(e){}}
+    })
+    .withFailureHandler(()=>{$('saved').textContent='불러오기 실패 — 새로고침해 주세요'})
+    .loadData();
+})();
+</script>
+</body>
+</html>
